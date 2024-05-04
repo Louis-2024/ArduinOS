@@ -12,11 +12,10 @@ TaskHandle_t TurnOn_Handler;
 TaskHandle_t Unlock_Handler;
 TaskHandle_t Menu_Handler;
 TaskHandle_t Setting_Handler;
-
+TaskHandle_t ResetPassword_Handler;
 
 bool prevButtonState = 0;
 String passwordInput = "";
-
 
 void TaskTurnOn(void *pvParameters){
   while(1){
@@ -25,7 +24,7 @@ void TaskTurnOn(void *pvParameters){
       u8x8.draw2x2UTF8(0, 3, "ArduinOS");
       vTaskDelay(2000/portTICK_PERIOD_MS);
       u8x8.clear();
-      xTaskCreate(TaskUnlock, "Unlock", 160, NULL, 1, &Unlock_Handler); //max measured stack size: 145
+      xTaskCreate(TaskUnlock, "Unlock", 256, NULL, 1, &Unlock_Handler);
       vTaskDelete(NULL);
     }
     prevButtonState = buttonState;
@@ -72,7 +71,7 @@ void TaskUnlock(void *pvParameters){
           prevButtonState = buttonState;
           passwordInput = "";
           u8x8.clear();
-          xTaskCreate(TaskMenu, "Menu", 160, NULL, 2, &Menu_Handler);
+          xTaskCreate(TaskMenu, "Menu", 256, NULL, 2, &Menu_Handler);
           vTaskDelete(NULL);
         }else{
           passwordInput = "";
@@ -82,7 +81,7 @@ void TaskUnlock(void *pvParameters){
         prevButtonState = buttonState;
         passwordInput = "";
         u8x8.clear();
-        xTaskCreate(TaskTurnOn, "TurnOn", 160, NULL, 3, &TurnOn_Handler);
+        xTaskCreate(TaskTurnOn, "TurnOn", 256, NULL, 3, &TurnOn_Handler);
         vTaskDelete(NULL);
       }
     }
@@ -145,13 +144,13 @@ void TaskMenu(void *pvParameters){
         case 0: //off
           prevButtonState = buttonState;
           u8x8.clear();
-          xTaskCreate(TaskTurnOn, "TurnOn", 160, NULL, 3, &TurnOn_Handler);
+          xTaskCreate(TaskTurnOn, "TurnOn", 256, NULL, 3, &TurnOn_Handler);
           vTaskDelete(NULL);
           break;
         case 1: //setting
           prevButtonState = buttonState;
           u8x8.clear();
-          xTaskCreate(TaskSetting, "Setting", 160, NULL, 1, &Setting_Handler);
+          xTaskCreate(TaskSetting, "Setting", 256, NULL, 1, &Setting_Handler);
           vTaskSuspend(NULL);
           break;
         case 2:
@@ -224,15 +223,16 @@ void TaskSetting(void *pvParameters){
     if(buttonState && !prevButtonState){
       switch(dialLevel) {
         case 0: //off
-          /*  not working due to lack of flash memory
           prevButtonState = buttonState;
           u8x8.clear();
-          xTaskCreate(TaskTurnOn, "TurnOn", 160, NULL, 3, &TurnOn_Handler);
+          xTaskCreate(TaskTurnOn, "TurnOn", 256, NULL, 3, &TurnOn_Handler);
           vTaskDelete(NULL);
-          */
           break;
         case 1: //reset password
-          //
+          prevButtonState = buttonState;
+          u8x8.clear();
+          xTaskCreate(TaskResetPassword, "ResetPassword", 256, NULL, 3, &ResetPassword_Handler);
+          vTaskDelete(NULL);
           break;
         case 2: //reset time
           //
@@ -254,6 +254,11 @@ void TaskSetting(void *pvParameters){
   }
 }
 
+void TaskResetPassword(void *pvParameters){
+  while(1){
+    //
+  }
+}
 
 void setup() {
   pinMode(BUZZER, OUTPUT);
@@ -264,7 +269,8 @@ void setup() {
   u8x8.setFlipMode(1);
   u8x8.setFont(u8x8_font_amstrad_cpc_extended_r);
 
-  xTaskCreate(TaskTurnOn, "TurnOn", 160, NULL, 3, &TurnOn_Handler);
+  xTaskCreate(TaskTurnOn, "TurnOn", 256, NULL, 3, &TurnOn_Handler);
+  vTaskStartScheduler();
 }
 
 void loop() { }
