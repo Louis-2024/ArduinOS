@@ -15,7 +15,6 @@ TaskHandle_t Setting_Handler;
 TaskHandle_t ResetPassword_Handler;
 
 bool prevButtonState = 0;
-String passwordInput = "";
 
 void TaskTurnOn(void *pvParameters){
   while(1){
@@ -28,12 +27,13 @@ void TaskTurnOn(void *pvParameters){
       vTaskDelete(NULL);
     }
     prevButtonState = buttonState;
-    vTaskDelay(20/portTICK_PERIOD_MS);
+    vTaskDelay(10/portTICK_PERIOD_MS);
   }
 }
 
 void TaskUnlock(void *pvParameters){
   Serial.begin(9600);
+  String passwordInput = "";
   while(1){
     byte buttonState = digitalRead(BUTTON);
     byte dialLevel = round((float) analogRead(DIAL)/1023 * 3);  //4 levels
@@ -69,7 +69,6 @@ void TaskUnlock(void *pvParameters){
           //unlock
           Serial.end();
           prevButtonState = buttonState;
-          passwordInput = "";
           u8x8.clear();
           xTaskCreate(TaskMenu, "Menu", 256, NULL, 2, &Menu_Handler);
           vTaskDelete(NULL);
@@ -79,7 +78,6 @@ void TaskUnlock(void *pvParameters){
       }else if(dialLevel == 3){
         Serial.end();
         prevButtonState = buttonState;
-        passwordInput = "";
         u8x8.clear();
         xTaskCreate(TaskTurnOn, "TurnOn", 256, NULL, 3, &TurnOn_Handler);
         vTaskDelete(NULL);
@@ -94,7 +92,7 @@ void TaskUnlock(void *pvParameters){
       u8x8.drawUTF8(14 - j, 4, "_");
     }
     prevButtonState = buttonState;
-    vTaskDelay(20/portTICK_PERIOD_MS);
+    vTaskDelay(10/portTICK_PERIOD_MS);
   }
 }
 
@@ -106,139 +104,136 @@ void TaskMenu(void *pvParameters){
 
     switch(dialLevel) {
       case 0:
+        u8x8.drawUTF8(13, 0, "OFF");
         u8x8.drawUTF8(2, 2, "FILES");
         u8x8.drawUTF8(2, 4, "PROGRAMS");
-        u8x8.drawUTF8(2, 6, "SETTING");
         u8x8.setInverseFont(1);
-        u8x8.drawUTF8(13, 0, "OFF");
+        u8x8.drawUTF8(2, 6, "SETTING");
         u8x8.setInverseFont(0);
         break;
       case 1:
-        u8x8.drawUTF8(2, 2, "FILES");
-        u8x8.drawUTF8(2, 4, "PROGRAMS");
-        u8x8.setInverseFont(1);
-        u8x8.drawUTF8(2, 6, "SETTING");
-        u8x8.setInverseFont(0);
         u8x8.drawUTF8(13, 0, "OFF");
+        u8x8.drawUTF8(2, 2, "FILES");
+        u8x8.setInverseFont(1);
+        u8x8.drawUTF8(2, 4, "PROGRAMS");
+        u8x8.setInverseFont(0);
+        u8x8.drawUTF8(2, 6, "SETTING");
         break;
       case 2:
-        u8x8.drawUTF8(2, 2, "FILES");
-        u8x8.setInverseFont(1);
-        u8x8.drawUTF8(2, 4, "PROGRAMS");
-        u8x8.setInverseFont(0);
-        u8x8.drawUTF8(2, 6, "SETTING");
         u8x8.drawUTF8(13, 0, "OFF");
+        u8x8.setInverseFont(1);
+        u8x8.drawUTF8(2, 2, "FILES");
+        u8x8.setInverseFont(0);
+        u8x8.drawUTF8(2, 4, "PROGRAMS");
+        u8x8.drawUTF8(2, 6, "SETTING");
         break;      
       case 3:
         u8x8.setInverseFont(1);
-        u8x8.drawUTF8(2, 2, "FILES");
+        u8x8.drawUTF8(13, 0, "OFF");
         u8x8.setInverseFont(0);
+        u8x8.drawUTF8(2, 2, "FILES");
         u8x8.drawUTF8(2, 4, "PROGRAMS");
         u8x8.drawUTF8(2, 6, "SETTING");
-        u8x8.drawUTF8(13, 0, "OFF");
         break;
     }
 
     if(buttonState && !prevButtonState){
       switch(dialLevel) {
-        case 0: //off
-          prevButtonState = buttonState;
-          u8x8.clear();
-          xTaskCreate(TaskTurnOn, "TurnOn", 256, NULL, 3, &TurnOn_Handler);
-          vTaskDelete(NULL);
-          break;
-        case 1: //setting
+        case 0: //setting
           prevButtonState = buttonState;
           u8x8.clear();
           xTaskCreate(TaskSetting, "Setting", 256, NULL, 1, &Setting_Handler);
           vTaskSuspend(NULL);
           break;
-        case 2:
+        case 1:
           //
           break;      
-        case 3:
+        case 2:
           //
           break;
-      }
-    }
-    prevButtonState = buttonState;
-    vTaskDelay(20/portTICK_PERIOD_MS);
-  }
-}
-
-
-void TaskSetting(void *pvParameters){
-  while(1){
-    byte buttonState = digitalRead(BUTTON);
-    byte dialLevel = round((float) analogRead(DIAL)/1023 * 4);  //5 levels
-
-    switch(dialLevel) {
-      case 0:
-        u8x8.drawUTF8(0, 0, "BACK");
-        u8x8.drawUTF8(2, 2, "ABOUT");
-        u8x8.drawUTF8(2, 4, "RESET TIME");
-        u8x8.drawUTF8(2, 6, "RESET PASSWORD");
-        u8x8.setInverseFont(1);
-        u8x8.drawUTF8(13, 0, "OFF");
-        u8x8.setInverseFont(0);
-        break;
-      case 1:
-        u8x8.drawUTF8(0, 0, "BACK");
-        u8x8.drawUTF8(2, 2, "ABOUT");
-        u8x8.drawUTF8(2, 4, "RESET TIME");
-        u8x8.setInverseFont(1);
-        u8x8.drawUTF8(2, 6, "RESET PASSWORD");
-        u8x8.setInverseFont(0);
-        u8x8.drawUTF8(13, 0, "OFF");
-        break;
-      case 2:
-        u8x8.drawUTF8(0, 0, "BACK");
-        u8x8.drawUTF8(2, 2, "ABOUT");
-        u8x8.setInverseFont(1);
-        u8x8.drawUTF8(2, 4, "RESET TIME");
-        u8x8.setInverseFont(0);
-        u8x8.drawUTF8(2, 6, "RESET PASSWORD");
-        u8x8.drawUTF8(13, 0, "OFF");
-        break;      
-      case 3:
-        u8x8.drawUTF8(0, 0, "BACK");
-        u8x8.setInverseFont(1);
-        u8x8.drawUTF8(2, 2, "ABOUT");
-        u8x8.setInverseFont(0);
-        u8x8.drawUTF8(2, 4, "RESET TIME");
-        u8x8.drawUTF8(2, 6, "RESET PASSWORD");
-        u8x8.drawUTF8(13, 0, "OFF");
-        break;
-      case 4:
-        u8x8.setInverseFont(1);
-        u8x8.drawUTF8(0, 0, "BACK");
-        u8x8.setInverseFont(0);
-        u8x8.drawUTF8(2, 2, "ABOUT");
-        u8x8.drawUTF8(2, 4, "RESET TIME");
-        u8x8.drawUTF8(2, 6, "RESET PASSWORD");
-        u8x8.drawUTF8(13, 0, "OFF");
-        break;
-    }
-
-    if(buttonState && !prevButtonState){
-      switch(dialLevel) {
-        case 0: //off
+        case 3: //off
           prevButtonState = buttonState;
           u8x8.clear();
           xTaskCreate(TaskTurnOn, "TurnOn", 256, NULL, 3, &TurnOn_Handler);
           vTaskDelete(NULL);
           break;
-        case 1: //reset password
+      }
+    }
+    prevButtonState = buttonState;
+    vTaskDelay(10/portTICK_PERIOD_MS);
+  }
+}
+
+void TaskSetting(void *pvParameters){
+  while(1){
+    byte buttonState = digitalRead(BUTTON);
+    byte dialLevel = round((float) analogRead(DIAL)/1023 * 4);  //5 levels
+    switch(dialLevel) {
+      case 0:
+        u8x8.drawUTF8(0, 0, "BACK");
+        u8x8.drawUTF8(13, 0, "OFF");
+        u8x8.drawUTF8(2, 2, "ABOUT");
+        u8x8.drawUTF8(2, 4, "RESET TIME");
+        u8x8.setInverseFont(1);
+        u8x8.drawUTF8(2, 6, "RESET PASSWORD");
+        u8x8.setInverseFont(0);
+        break;
+      case 1:
+        u8x8.drawUTF8(0, 0, "BACK");
+        u8x8.drawUTF8(13, 0, "OFF");
+        u8x8.drawUTF8(2, 2, "ABOUT");
+        u8x8.setInverseFont(1);
+        u8x8.drawUTF8(2, 4, "RESET TIME");
+        u8x8.setInverseFont(0);
+        u8x8.drawUTF8(2, 6, "RESET PASSWORD");
+        break;
+      case 2:
+        u8x8.drawUTF8(0, 0, "BACK");
+        u8x8.drawUTF8(13, 0, "OFF");
+        u8x8.setInverseFont(1);
+        u8x8.drawUTF8(2, 2, "ABOUT");
+        u8x8.setInverseFont(0);
+        u8x8.drawUTF8(2, 4, "RESET TIME");
+        u8x8.drawUTF8(2, 6, "RESET PASSWORD");
+        break;      
+      case 3:
+        u8x8.drawUTF8(0, 0, "BACK");
+        u8x8.setInverseFont(1);
+        u8x8.drawUTF8(13, 0, "OFF");
+        u8x8.setInverseFont(0);
+        u8x8.drawUTF8(2, 2, "ABOUT");
+        u8x8.drawUTF8(2, 4, "RESET TIME");
+        u8x8.drawUTF8(2, 6, "RESET PASSWORD");
+        break;
+      case 4:
+        u8x8.setInverseFont(1);
+        u8x8.drawUTF8(0, 0, "BACK");
+        u8x8.setInverseFont(0);
+        u8x8.drawUTF8(13, 0, "OFF");
+        u8x8.drawUTF8(2, 2, "ABOUT");
+        u8x8.drawUTF8(2, 4, "RESET TIME");
+        u8x8.drawUTF8(2, 6, "RESET PASSWORD");
+        break;
+    }
+    if(buttonState && !prevButtonState){
+      switch(dialLevel) {
+        case 0: //reset password
           prevButtonState = buttonState;
           u8x8.clear();
           xTaskCreate(TaskResetPassword, "ResetPassword", 256, NULL, 3, &ResetPassword_Handler);
           vTaskDelete(NULL);
           break;
-        case 2: //reset time
+        case 1: //reset time
           //
           break;      
-        case 3: //about
+        case 2: //about
           //
+          break;
+        case 3: //off
+          prevButtonState = buttonState;
+          u8x8.clear();
+          xTaskCreate(TaskTurnOn, "TurnOn", 256, NULL, 3, &TurnOn_Handler);
+          vTaskDelete(NULL);
           break;
         case 4: //back
           prevButtonState = buttonState;
@@ -250,13 +245,90 @@ void TaskSetting(void *pvParameters){
     }
 
     prevButtonState = buttonState;
-    vTaskDelay(20/portTICK_PERIOD_MS);
+    vTaskDelay(10/portTICK_PERIOD_MS);
   }
 }
 
 void TaskResetPassword(void *pvParameters){
+  Serial.begin(9600);
+  String passwordInput = "";
   while(1){
-    //
+    byte buttonState = digitalRead(BUTTON);
+    byte dialLevel = round((float) analogRead(DIAL)/1023 * 5);  //6 levels
+    switch(dialLevel) {
+      case 0:
+        u8x8.drawUTF8(0, 0, "BACK");
+        u8x8.drawUTF8(11, 0, "RESET");
+        u8x8.drawUTF8(0, 7, "DELETE");
+        u8x8.setInverseFont(1);
+        u8x8.drawUTF8(11, 7, "CLEAR");
+        u8x8.setInverseFont(0);
+        break;
+      case 1:
+        u8x8.drawUTF8(0, 0, "BACK");
+        u8x8.drawUTF8(11, 0, "RESET");
+        u8x8.setInverseFont(1);
+        u8x8.drawUTF8(0, 7, "DELETE");
+        u8x8.setInverseFont(0);
+        u8x8.drawUTF8(11, 7, "CLEAR");
+        break;
+      case 4:
+        u8x8.drawUTF8(0, 0, "BACK");
+        u8x8.setInverseFont(1);
+        u8x8.drawUTF8(11, 0, "RESET");
+        u8x8.setInverseFont(0);
+        u8x8.drawUTF8(0, 7, "DELETE");
+        u8x8.drawUTF8(11, 7, "CLEAR");
+        break;
+      case 5:
+        u8x8.setInverseFont(1);
+        u8x8.drawUTF8(0, 0, "BACK");
+        u8x8.setInverseFont(0);
+        u8x8.drawUTF8(11, 0, "RESET");
+        u8x8.drawUTF8(0, 7, "DELETE");
+        u8x8.drawUTF8(11, 7, "CLEAR");
+        break;  
+      default:
+        u8x8.drawUTF8(0, 0, "BACK");
+        u8x8.drawUTF8(11, 0, "RESET");
+        u8x8.drawUTF8(0, 7, "DELETE");
+        u8x8.drawUTF8(11, 7, "CLEAR");
+    }
+    if(Serial.available()>0){
+      char input = Serial.read();
+      if(input >= '0' && input <= '9' && passwordInput.length() < 4){
+        passwordInput = passwordInput + input;
+      }
+    }
+    u8x8.drawUTF8(1, 4, "Password:");
+    u8x8.drawUTF8(11, 4, passwordInput.c_str());
+    for(byte j = 0; j < 4 - passwordInput.length(); j++){
+      u8x8.drawUTF8(14 - j, 4, "_");
+    }
+    if(buttonState && !prevButtonState){  //presssing button
+      if(dialLevel == 4 && passwordInput.length() == 4){
+        for(int i=0; i<passwordInput.length(); i++){
+          EEPROM.write(i, passwordInput[i] - '0');
+        }
+        Serial.end();
+        prevButtonState = buttonState;
+        u8x8.clear();
+        xTaskCreate(TaskSetting, "Setting", 256, NULL, 1, &Setting_Handler);
+        vTaskDelete(NULL);
+      }else if(dialLevel == 5){
+        Serial.end();
+        prevButtonState = buttonState;
+        u8x8.clear();
+        xTaskCreate(TaskSetting, "Setting", 256, NULL, 1, &Setting_Handler);
+        vTaskDelete(NULL);
+      }else if(dialLevel == 1){
+        passwordInput = passwordInput.substring(0, passwordInput.length() - 1);
+      }else if(dialLevel == 0){
+        passwordInput = "";
+      }
+    }
+    prevButtonState = buttonState;
+    vTaskDelay(10/portTICK_PERIOD_MS);
   }
 }
 
